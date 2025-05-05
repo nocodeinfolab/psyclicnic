@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Your Therapist | PsyClinic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        :root {
+            --sky-blue: #87CEEB;
+            --deep-blue: #1E90FF;
+            --light-blue: #E6F4F9;
+            --dark-gray: #333333;
+            --medium-gray: #666666;
+            --light-gray: #F5F5F5;
+            --white: #FFFFFF;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--light-blue);
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--deep-blue);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            color: var(--medium-gray);
+            font-size: 16px;
+        }
+        
+        .search-filter {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            background-color: var(--light-gray);
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--medium-gray);
+        }
+        
+        .filter-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 8px 15px;
+            background-color: var(--white);
+            border: 1px solid var(--sky-blue);
+            border-radius: 20px;
+            color: var(--deep-blue);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-btn.active, .filter-btn:hover {
+            background-color: var(--sky-blue);
+            color: var(--white);
+        }
+        
+        .providers-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        .provider-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+        
+        .provider-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .provider-header {
+            display: flex;
+            padding: 20px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .provider-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 3px solid var(--sky-blue);
+        }
+        
+        .provider-info {
+            flex: 1;
+        }
+        
+        .provider-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-gray);
+            margin-bottom: 5px;
+        }
+        
+        .provider-role {
+            display: inline-block;
+            background-color: var(--light-blue);
+            color: var(--deep-blue);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .provider-rating {
+            color: #FFC107;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .provider-location {
+            display: flex;
+            align-items: center;
+            color: var(--medium-gray);
+            font-size: 14px;
+        }
+        
+        .provider-location i {
+            margin-right: 5px;
+        }
+        
+        .provider-details {
+            padding: 20px;
+        }
+        
+        .detail-row {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: var(--medium-gray);
+            min-width: 120px;
+        }
+        
+        .detail-value {
+            flex: 1;
+        }
+        
+        .specializations {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        
+        .specialization-tag {
+            background-color: var(--light-blue);
+            color: var(--deep-blue);
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+        
+        .provider-bio {
+            margin: 15px 0;
+            font-style: italic;
+            color: var(--medium-gray);
+        }
+        
+        .availability-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--sky-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .availability-btn:hover {
+            background-color: var(--deep-blue);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--white);
+            margin: 50px auto;
+            max-width: 500px;
+            width: 90%;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            color: var(--deep-blue);
+            font-size: 22px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--medium-gray);
+            cursor: pointer;
+        }
+        
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .time-slot {
+            padding: 10px;
+            background-color: var(--light-gray);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .time-slot:hover {
+            background-color: var(--sky-blue);
+            color: var(--white);
+        }
+        
+        .time-slot.booked {
+            background-color: #FFEBEE;
+            color: #EF5350;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        
+        .time-slot.selected {
+            background-color: var(--deep-blue);
+            color: var(--white);
+            border-color: var(--deep-blue);
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            border: 1px solid #ddd;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .btn-primary {
+            background-color: var(--sky-blue);
+            color: var(--white);
+            border: none;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--deep-blue);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+        }
+        
+        .loading-spinner {
+            border: 4px solid var(--light-gray);
+            border-top: 4px solid var(--sky-blue);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+        
+        @media (min-width: 768px) {
+            .providers-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .time-slots {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Find Your Therapist</h1>
+            <p class="subtitle">Connect with licensed professionals who can help you on your journey</p>
+        </header>
+        
+        <div class="search-filter">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search by name, specialization...">
+            </div>
+            <div class="filter-options">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="psychologist">Psychologists</button>
+                <button class="filter-btn" data-filter="psychiatrist">Psychiatrists</button>
+                <button class="filter-btn" data-filter="counselor">Counselors</button>
+            </div>
+        </div>
+        
+        <div id="providersContainer" class="providers-list">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <p>Loading care providers...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Schedule Modal -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Schedule Session</h2>
+                <button class="close-btn" id="closeModal">&times;</button>
+            </div>
+            <div id="modalProviderInfo"></div>
+            <h3 style="margin: 20px 0 10px;">Available Time Slots</h3>
+            <div id="timeSlots" class="time-slots">
+                <!-- Time slots will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancelBooking">Cancel</button>
+                <button class="btn btn-primary" id="confirmBooking">Confirm Booking</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDjWX_BvuRa-3-c4nhVupoVDPoQCmkcWlc",
+            authDomain: "psy-clinic-1e0b1.firebaseapp.com",
+            projectId: "psy-clinic-1e0b1",
+            storageBucket: "psy-clinic-1e0b1.appspot.com",
+            messagingSenderId: "455712351090",
+            appId: "1:455712351090:web:8df100aa7cc657bd31f3eb",
+            measurementId: "G-L6KHKN6LQ5"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Global variables
+        let providers = [];
+        let filteredProviders = [];
+        let selectedProvider = null;
+        let selectedTimeSlot = null;
+        
+        // DOM elements
+        const providersContainer = document.getElementById('providersContainer');
+        const searchInput = document.getElementById('searchInput');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const scheduleModal = document.getElementById('scheduleModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBooking = document.getElementById('cancelBooking');
+        const confirmBooking = document.getElementById('confirmBooking');
+        const modalProviderInfo = document.getElementById('modalProviderInfo');
+        const timeSlots = document.getElementById('timeSlots');
+        
+        // Fetch care providers from Firestore
+        function fetchCareProviders() {
+            providersContainer.innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading care providers...</p>
+                </div>
+            `;
+            
+            db.collection("care_providers").get()
+                .then((querySnapshot) => {
+                    providers = [];
+                    querySnapshot.forEach((doc) => {
+                        const provider = doc.data();
+                        provider.id = doc.id;
+                        providers.push(provider);
+                    });
+                    
+                    renderProviders(providers);
+                })
+                .catch((error) => {
+                    console.error("Error fetching providers: ", error);
+                    providersContainer.innerHTML = `
+                        <div class="no-results">
+                            <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #EF5350; margin-bottom: 20px;"></i>
+                            <h3>Error Loading Providers</h3>
+                            <p>We couldn't load the care providers at this time. Please try again later.</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Render providers to the UI
+        function renderProviders(providersToRender) {
+            if (providersToRender.length === 0) {
+                providersContainer.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-user-md" style="font-size: 48px; color: var(--sky-blue); margin-bottom: 20px;"></i>
+                        <h3>No Providers Found</h3>
+                        <p>Try adjusting your search or filters to find what you're looking for.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            providersContainer.innerHTML = '';
+            
+            providersToRender.forEach(provider => {
+                const providerCard = document.createElement('div');
+                providerCard.className = 'provider-card';
+                
+                // Format specializations
+                const specializationsHTML = provider.specializations && provider.specializations.length > 0 
+                    ? provider.specializations.map(spec => `<span class="specialization-tag">${spec}</span>`).join('')
+                    : '<span class="specialization-tag">General Practice</span>';
+                
+                // Format experience
+                const experienceText = provider.years_experience 
+                    ? `${provider.years_experience} ${provider.years_experience === 1 ? 'year' : 'years'} of experience`
+                    : 'Experience not specified';
+                
+                // Format languages
+                const languagesText = provider.languages && provider.languages.length > 0 
+                    ? `Speaks: ${provider.languages.join(', ')}`
+                    : '';
+                
+                providerCard.innerHTML = `
+                    <div class="provider-header">
+                        <img src="${provider.profile_picture_url || 'https://via.placeholder.com/80?text=No+Image'}" alt="${provider.full_name}" class="provider-avatar">
+                        <div class="provider-info">
+                            <h2 class="provider-name">${provider.full_name}</h2>
+                            <span class="provider-role">${provider.role || 'Mental Health Professional'}</span>
+                            <div class="provider-rating">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                                <span>(24)</span>
+                            </div>
+                            <div class="provider-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>${provider.location?.city || 'City'}, ${provider.location?.state || 'State'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="provider-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Specializations:</span>
+                            <div class="detail-value specializations">
+                                ${specializationsHTML}
+                            </div>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Experience:</span>
+                            <span class="detail-value">${experienceText}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Languages:</span>
+                            <span class="detail-value">${languagesText}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">License:</span>
+                            <span class="detail-value">${provider.license_number || 'Not specified'}</span>
+                        </div>
+                        ${provider.bio ? `<p class="provider-bio">"${provider.bio}"</p>` : ''}
+                        <button class="availability-btn" data-provider-id="${provider.id}">
+                            <i class="far fa-calendar-alt"></i> Check Availability
+                        </button>
+                    </div>
+                `;
+                
+                providersContainer.appendChild(providerCard);
+            });
+            
+            // Add event listeners to availability buttons
+            document.querySelectorAll('.availability-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const providerId = this.getAttribute('data-provider-id');
+                    openScheduleModal(providerId);
+                });
+            });
+        }
+        
+        // Open schedule modal with provider info
+        function openScheduleModal(providerId) {
+            selectedProvider = providers.find(p => p.id === providerId);
+            selectedTimeSlot = null;
+            
+            if (!selectedProvider) return;
+            
+            // Populate provider info in modal
+            modalProviderInfo.innerHTML = `
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <img src="${selectedProvider.profile_picture_url || 'https://via.placeholder.com/60?text=No+Image'}" 
+                         alt="${selectedProvider.full_name}" 
+                         style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; margin-right: 15px; border: 2px solid var(--sky-blue);">
+                    <div>
+                        <h3 style="margin: 0 0 5px; color: var(--dark-gray);">${selectedProvider.full_name}</h3>
+                        <p style="margin: 0; color: var(--medium-gray); font-size: 14px;">${selectedProvider.role || 'Mental Health Professional'}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Populate time slots (simplified for example)
+            // In a real app, you would check booked sessions from Firestore
+            timeSlots.innerHTML = '';
+            
+            if (selectedProvider.availability && selectedProvider.availability.time_slots) {
+                selectedProvider.availability.time_slots.forEach(slot => {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    timeSlot.textContent = slot;
+                    timeSlot.setAttribute('data-time', slot);
+                    
+                    // Check if slot is booked (in a real app, you'd check Firestore)
+                    const isBooked = Math.random() < 0.3; // Random for demo
+                    if (isBooked) {
+                        timeSlot.classList.add('booked');
+                        timeSlot.textContent += ' (Booked)';
+                    } else {
+                        timeSlot.addEventListener('click', function() {
+                            document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
+                            this.classList.add('selected');
+                            selectedTimeSlot = this.getAttribute('data-time');
+                        });
+                    }
+                    
+                    timeSlots.appendChild(timeSlot);
+                });
+            } else {
+                timeSlots.innerHTML = '<p>No availability information found for this provider.</p>';
+            }
+            
+            scheduleModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // Close schedule modal
+        function closeScheduleModal() {
+            scheduleModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Filter providers based on search input
+        function filterProviders() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+            
+            filteredProviders = providers.filter(provider => {
+                // Filter by search term
+                const matchesSearch = 
+                    provider.full_name.toLowerCase().includes(searchTerm) ||
+                    (provider.specializations && provider.specializations.some(s => s.toLowerCase().includes(searchTerm))) ||
+                    (provider.bio && provider.bio.toLowerCase().includes(searchTerm));
+                
+                // Filter by role
+                const matchesFilter = 
+                    activeFilter === 'all' || 
+                    (provider.role && provider.role.toLowerCase().includes(activeFilter));
+                
+                return matchesSearch && matchesFilter;
+            });
+            
+            renderProviders(filteredProviders);
+        }
+        
+        // Confirm booking (simplified for example)
+        function confirmBookingHandler() {
+            if (!selectedTimeSlot) {
+                alert('Please select a time slot for your session.');
+                return;
+            }
+            
+            // In a real app, you would:
+            // 1. Create a booking document in Firestore
+            // 2. Update the provider's availability
+            // 3. Send confirmation to both client and provider
+            
+            alert(`Your session with ${selectedProvider.full_name} has been scheduled for ${selectedTimeSlot}. A confirmation has been sent to your email.`);
+            
+            // Close modal and reset selection
+            closeScheduleModal();
+            selectedProvider = null;
+            selectedTimeSlot = null;
+        }
+        
+        // Event listeners
+        searchInput.addEventListener('input', filterProviders);
+        
+        filterButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                filterProviders();
+            });
+        });
+        
+        closeModal.addEventListener('click', closeScheduleModal);
+        cancelBooking.addEventListener('click', closeScheduleModal);
+        confirmBooking.addEventListener('click', confirmBookingHandler);
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === scheduleModal) {
+                closeScheduleModal();
+            }
+        });
+        
+        // Initialize the app when the page loads
+        window.addEventListener('DOMContentLoaded', fetchCareProviders);
+    </script>
+</body>
+</html>
