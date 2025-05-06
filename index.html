@@ -442,6 +442,30 @@
                 grid-template-columns: repeat(3, 1fr);
             }
         }
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: var(--white);
+            padding: 12px 25px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            font-weight: 500;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
     </style>
 </head>
 <body>
@@ -503,6 +527,7 @@
             </div>
         </div>
     </div>
+    <div class="notification" id="notification"></div>
     
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
@@ -698,6 +723,8 @@
                 
                 providersContainer.appendChild(providerCard);
             });
+
+            
             
             // Add event listeners to availability buttons
             document.querySelectorAll('.availability-btn').forEach(button => {
@@ -917,6 +944,15 @@
                 console.error('Booking error:', error);
                 alert('There was an error processing your booking. Please try again.');
             });
+        }
+        // Show notification
+        function showNotification(message, duration = 3000) {
+            notification.textContent = message;
+            notification.classList.add('show');
+                
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
         }
         
         // Event listeners
