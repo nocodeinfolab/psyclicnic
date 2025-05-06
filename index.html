@@ -445,25 +445,26 @@
         /* Notification Styles */
         .notification {
             position: fixed;
-            top: 70px;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--primary);
-            color: var(--white);
+            background: #1E90FF;
+            color: white;
             padding: 12px 25px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
+            border-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             font-weight: 500;
             z-index: 1000;
             opacity: 0;
             transition: opacity 0.3s, transform 0.3s;
             max-width: 90%;
             text-align: center;
+            pointer-events: none;
         }
 
         .notification.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(-50%) translateY(10px);
         }
 
     </style>
@@ -540,7 +541,7 @@
         let userEmail = null;
         let userDisplayName = null;
         let bookedSessions = [];
-        
+
         // DOM elements
         const providersContainer = document.getElementById('providersContainer');
         const searchInput = document.getElementById('searchInput');
@@ -556,7 +557,8 @@
         const sessionDate = document.getElementById('sessionDate');
         const dateSelectionSection = document.getElementById('dateSelectionSection');
         const timeSelectionSection = document.getElementById('timeSelectionSection');
-        
+        const notification = document.getElementById('notification');
+
         // Initialize the app when the page loads
         window.addEventListener('DOMContentLoaded', function() {
             // Get email from URL parameter
@@ -564,7 +566,7 @@
             userEmail = urlParams.get('email');
             
             if (!userEmail) {
-                alert('Please login to access this page. Redirecting to login...');
+                showNotification('Please login to access this page. Redirecting to login...', 3000);
                 // In a real app, you would redirect to login page
                 return;
             }
@@ -578,15 +580,25 @@
                         // Now fetch care providers
                         fetchCareProviders();
                     } else {
-                        alert('User not found. Please check your email or contact support.');
+                        showNotification('User not found. Please check your email or contact support.', 3000);
                     }
                 })
                 .catch(error => {
                     console.error('Error fetching user data:', error);
-                    alert('Error loading user data. Please try again later.');
+                    showNotification('Error loading user data. Please try again later.', 3000);
                 });
         });
-        
+
+        // Show notification
+        function showNotification(message, duration = 3000) {
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
         // Fetch user data from Render backend
         async function fetchUserData(email) {
             try {
@@ -608,7 +620,7 @@
                 throw error;
             }
         }
-        
+
         // Fetch care providers from Render backend
         function fetchCareProviders() {
             providersContainer.innerHTML = `
@@ -638,9 +650,10 @@
                             <p>We couldn't load the care providers at this time. Please try again later.</p>
                         </div>
                     `;
+                    showNotification('Error loading providers. Please try again later.', 3000);
                 });
         }
-        
+
         // Render providers to the UI
         function renderProviders(providersToRender) {
             if (providersToRender.length === 0) {
@@ -723,8 +736,6 @@
                 
                 providersContainer.appendChild(providerCard);
             });
-
-            
             
             // Add event listeners to availability buttons
             document.querySelectorAll('.availability-btn').forEach(button => {
@@ -734,7 +745,7 @@
                 });
             });
         }
-        
+
         // Open schedule modal with provider info
         function openScheduleModal(providerId) {
             selectedProvider = providers.find(p => p.id === providerId);
@@ -797,7 +808,7 @@
             scheduleModal.style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
-        
+
         // Fetch booked sessions for a specific provider and date
         function fetchBookedSessionsForDate(providerId, date) {
             fetch('https://firebase-backend-6arf.onrender.com/booked_sessions', {
@@ -826,7 +837,7 @@
                 showTimeSlotsForDate(date);
             });
         }
-        
+
         // Show time slots for selected date
         function showTimeSlotsForDate(date) {
             if (!selectedProvider || !selectedProvider.availability || !selectedProvider.availability.time_slots) {
@@ -870,13 +881,13 @@
             dateSelectionSection.style.display = 'none';
             timeSelectionSection.style.display = 'block';
         }
-        
+
         // Close schedule modal
         function closeScheduleModal() {
             scheduleModal.style.display = 'none';
             document.body.style.overflow = 'auto';
         }
-        
+
         // Filter providers based on search input
         function filterProviders() {
             const searchTerm = searchInput.value.toLowerCase();
@@ -899,19 +910,19 @@
             
             renderProviders(filteredProviders);
         }
-        
+
         // Confirm booking
         function confirmBookingHandler() {
             if (!selectedTimeSlot || !selectedDate || !selectedProvider) {
-                alert('Please select a date and time slot for your session.');
+                showNotification('Please select a date and time slot for your session.', 3000);
                 return;
             }
-            
+
             if (!userEmail || !userDisplayName) {
-                alert('User information missing. Please refresh the page and try again.');
+                showNotification('User information missing. Please refresh the page and try again.', 3000);
                 return;
             }
-            
+
             const bookingData = {
                 booked_date: selectedDate,
                 booked_time: selectedTimeSlot,
@@ -922,7 +933,7 @@
                 confirmed: false,
                 payment_made: false
             };
-            
+
             fetch('https://firebase-backend-6arf.onrender.com/book_session', {
                 method: 'POST',
                 headers: {
@@ -937,27 +948,18 @@
                 return response.json();
             })
             .then(data => {
-                alert(`Your session with ${selectedProvider.full_name} has been scheduled for ${selectedDate} at ${selectedTimeSlot}. A confirmation has been sent to your email.`);
+                showNotification(`Your session with ${selectedProvider.full_name} has been scheduled for ${selectedDate} at ${selectedTimeSlot}. A confirmation has been sent to your email.`, 5000);
                 closeScheduleModal();
             })
             .catch(error => {
                 console.error('Booking error:', error);
-                alert('There was an error processing your booking. Please try again.');
+                showNotification('There was an error processing your booking. Please try again.', 3000);
             });
         }
-        // Show notification
-        function showNotification(message, duration = 3000) {
-            notification.textContent = message;
-            notification.classList.add('show');
-                
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
-        }
-        
+
         // Event listeners
         searchInput.addEventListener('input', filterProviders);
-        
+
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
                 filterButtons.forEach(btn => btn.classList.remove('active'));
@@ -965,11 +967,11 @@
                 filterProviders();
             });
         });
-        
+
         closeModal.addEventListener('click', closeScheduleModal);
         cancelBooking.addEventListener('click', closeScheduleModal);
         confirmBooking.addEventListener('click', confirmBookingHandler);
-        
+
         // Close modal when clicking outside
         window.addEventListener('click', function(event) {
             if (event.target === scheduleModal) {
