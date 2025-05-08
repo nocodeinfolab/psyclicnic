@@ -771,10 +771,13 @@
                 </div>
             `;
             
-            // Show available days
+            // Show available days based on the new availability structure
             availableDays.innerHTML = '';
-            if (selectedProvider.availability && selectedProvider.availability.days) {
-                selectedProvider.availability.days.forEach(day => {
+            if (selectedProvider.availability && selectedProvider.availability.length > 0) {
+                // Extract unique days from availability
+                const uniqueDays = [...new Set(selectedProvider.availability.map(avail => avail.day))];
+                
+                uniqueDays.forEach(day => {
                     const dayTag = document.createElement('div');
                     dayTag.className = 'day-tag';
                     dayTag.textContent = day;
@@ -791,10 +794,11 @@
                 disable: [
                     function(date) {
                         // Disable dates that don't match the provider's available days
-                        if (!selectedProvider.availability || !selectedProvider.availability.days) return true;
+                        if (!selectedProvider.availability || selectedProvider.availability.length === 0) return true;
                         
                         const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
-                        return !selectedProvider.availability.days.includes(dayName);
+                        const availableDays = selectedProvider.availability.map(avail => avail.day);
+                        return !availableDays.includes(dayName);
                     }
                 ],
                 onChange: function(selectedDates, dateStr, instance) {
@@ -840,29 +844,36 @@
 
         // Show time slots for selected date
         function showTimeSlotsForDate(date) {
-            if (!selectedProvider || !selectedProvider.availability || !selectedProvider.availability.time_slots) {
+            if (!selectedProvider || !selectedProvider.availability || selectedProvider.availability.length === 0) {
                 timeSlots.innerHTML = '<p>No availability information found for this provider.</p>';
                 return;
             }
             
             const selectedDay = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
             
-            // Check if the selected day is in the provider's available days
-            if (!selectedProvider.availability.days.includes(selectedDay)) {
+            // Find availability for the selected day
+            const dayAvailability = selectedProvider.availability.find(avail => avail.day === selectedDay);
+            
+            if (!dayAvailability || !dayAvailability.time_slots || dayAvailability.time_slots.length === 0) {
                 timeSlots.innerHTML = '<p>No availability for the selected day.</p>';
                 return;
             }
             
             timeSlots.innerHTML = '';
             
-            selectedProvider.availability.time_slots.forEach(slot => {
+            dayAvailability.time_slots.forEach(slot => {
                 const timeSlot = document.createElement('div');
                 timeSlot.className = 'time-slot';
-                timeSlot.textContent = slot;
-                timeSlot.setAttribute('data-time', slot);
+                timeSlot.textContent = `${slot.start} - ${slot.end}`;
+                timeSlot.setAttribute('data-start', slot.start);
+                timeSlot.setAttribute('data-end', slot.end);
                 
                 // Check if slot is booked
-                const isBooked = bookedSessions.some(session => session.booked_time === slot);
+                const isBooked = bookedSessions.some(session => {
+                    return session.booked_time === `${slot.start}-${slot.end}` || 
+                           (session.start_time === slot.start && session.end_time === slot.end);
+                });
+                
                 if (isBooked) {
                     timeSlot.classList.add('booked');
                     timeSlot.textContent += ' (Booked)';
@@ -870,7 +881,10 @@
                     timeSlot.addEventListener('click', function() {
                         document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('selected'));
                         this.classList.add('selected');
-                        selectedTimeSlot = this.getAttribute('data-time');
+                        selectedTimeSlot = {
+                            start: this.getAttribute('data-start'),
+                            end: this.getAttribute('data-end')
+                        };
                     });
                 }
                 
@@ -925,7 +939,8 @@
 
             const bookingData = {
                 booked_date: selectedDate,
-                booked_time: selectedTimeSlot,
+                start_time: selectedTimeSlot.start,
+                end_time: selectedTimeSlot.end,
                 user_email: userEmail,
                 user_name: userDisplayName,
                 provider_id: selectedProvider.id,
@@ -948,7 +963,7 @@
                 return response.json();
             })
             .then(data => {
-                showNotification(`Your session with ${selectedProvider.full_name} has been scheduled for ${selectedDate} at ${selectedTimeSlot}. A confirmation has been sent to your email.`, 5000);
+                showNotification(`Your session with ${selectedProvider.full_name} has been scheduled for ${selectedDate} from ${selectedTimeSlot.start} to ${selectedTimeSlot.end}. A confirmation has been sent to your email.`, 5000);
                 closeScheduleModal();
             })
             .catch(error => {
