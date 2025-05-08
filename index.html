@@ -939,8 +939,7 @@
 
             const bookingData = {
                 booked_date: selectedDate,
-                start_time: selectedTimeSlot.start,
-                end_time: selectedTimeSlot.end,
+                booked_time: `${selectedTimeSlot.start}-${selectedTimeSlot.end}`,
                 user_email: userEmail,
                 user_name: userDisplayName,
                 provider_id: selectedProvider.id,
