@@ -945,7 +945,8 @@
                 provider_id: selectedProvider.id,
                 provider_name: selectedProvider.full_name,
                 confirmed: false,
-                payment_made: false
+                payment_made: false,
+                session_id: ''
             };
 
             fetch('https://firebase-backend-6arf.onrender.com/book_session', {
