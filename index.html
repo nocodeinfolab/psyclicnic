@@ -948,7 +948,7 @@
                 payment_made: false,
                 session_id: '',
                 userId: userEmail,
-                channelName: '${selectedProvider.uid}_${selectedDate}_${selectedTimeSlot.start}-${selectedTimeSlot.end}'
+                channelName: `${selectedProvider.uid}_${selectedDate}_${selectedTimeSlot.start}-${selectedTimeSlot.end}`
             };
 
             fetch('https://firebase-backend-6arf.onrender.com/book_session', {
